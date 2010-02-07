@@ -1,0 +1,39 @@
+#!/bin/bash
+# vim: set noet ts=4 sw=4 sts=4 :
+
+me=${0##*/}
+if [ $# -lt 1 ]; then
+	echo "Usage: $me package-pattern" 1>&2
+	exit 2
+fi
+
+pat="$1"
+shift
+
+selectionsfile=/tmp/$me.$$.1
+searchresult=/tmp/$me.$$.2
+searchresult_tmp=/tmp/$me.$$.3
+trap "rm -f $selectionsfile $searchresult $searchresult_tmp" EXIT
+
+dpkg --get-selections >| $selectionsfile
+
+apt-cache search "$pat" >| $searchresult
+
+while [ $# -gt 0 ]; do
+	grep -e "$1" $searchresult >| $searchresult_tmp
+	cp $searchresult_tmp $searchresult
+	shift
+done
+
+while read a; do
+	name=${a%% *}
+	desc=${a#* } desc=${desc#* }
+	status=(`grep "^$name	" $selectionsfile`)
+	if [ -z "${status[1]}" -o "${status[1]}" != 'install' ]; then
+		mark=' '
+	else
+		mark='o'
+	fi
+	echo "$mark $name - $desc"
+done < $searchresult
+
