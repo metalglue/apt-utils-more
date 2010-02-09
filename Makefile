@@ -1,5 +1,5 @@
 
-DEST =
+DESTDIR =
 PREFIX = /usr/local
 
 all:
